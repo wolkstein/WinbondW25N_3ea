@@ -1,9 +1,9 @@
-#include "WinbondW25N.h"
+#include "WinbondW25N3ea.h"
 
-W25N::W25N(){};
+W25N3EA::W25N3EA(){};
 
 
-void W25N::sendData(char * buf, uint32_t len){
+void W25N3EA::sendData(char * buf, uint32_t len){
   SPI.beginTransaction(SPISettings(80000000, MSBFIRST, SPI_MODE0));
   digitalWrite(_cs, LOW);
   SPI.transfer(buf, len);
@@ -11,11 +11,11 @@ void W25N::sendData(char * buf, uint32_t len){
   SPI.endTransaction();
 }
 
-int W25N::begin(uint8_t cs) {
+int W25N3EA::begin(uint8_t cs) {
  return this->begin(cs, MOSI, MISO, SCK);
 }
 
-int W25N::begin(uint8_t cs, uint8_t mosi, uint8_t miso, uint8_t sck){
+int W25N3EA::begin(uint8_t cs, uint8_t mosi, uint8_t miso, uint8_t sck){
   SPI.setMISO(miso);
   SPI.setMOSI(mosi);
   SPI.setSCK(sck);
@@ -48,14 +48,14 @@ int W25N::begin(uint8_t cs, uint8_t mosi, uint8_t miso, uint8_t sck){
   return 1;
 }
 
-void W25N::reset(){
+void W25N3EA::reset(){
   //TODO check WIP in case of reset during write
   char buf[] = {W25N_RESET};
   this->sendData(buf, sizeof(buf));
   delayMicroseconds(600);	//Trst max time 500uS
 }
 
-int W25N::dieSelect(char die){
+int W25N3EA::dieSelect(char die){
   //TODO add some type of input validation
   char buf[2] = {W25M_DIE_SELECT, die};
   this->sendData(buf, sizeof(buf));
@@ -63,39 +63,39 @@ int W25N::dieSelect(char die){
   return 0;
 }
 
-int W25N::dieSelectOnAdd(uint32_t pageAdd){
+int W25N3EA::dieSelectOnAdd(uint32_t pageAdd){
   if(pageAdd > this->getMaxPage()) return 1;
   return this->dieSelect(pageAdd / W25N01GV_MAX_PAGE);
 }
 
-char W25N::getStatusReg(char reg){
+char W25N3EA::getStatusReg(char reg){
   char buf[3] = {W25N_READ_STATUS_REG, reg, 0x00};
   this->sendData(buf, sizeof(buf));
   return buf[2];
 }
 
-void W25N::setStatusReg(char reg, char set){
+void W25N3EA::setStatusReg(char reg, char set){
   char buf[3] = {W25N_WRITE_STATUS_REG, reg, set};
   this->sendData(buf, sizeof(buf));
 }
 
-uint32_t W25N::getMaxPage(){
+uint32_t W25N3EA::getMaxPage(){
   if (_model == W25M02GV) return W25M02GV_MAX_PAGE;
   if (_model == W25N01GV) return W25N01GV_MAX_PAGE;
   return 0;
 }
 
-void W25N::writeEnable(){
+void W25N3EA::writeEnable(){
   char buf[] = {W25N_WRITE_ENABLE};
   this->sendData(buf, sizeof(buf));
 }
 
-void W25N::writeDisable(){
+void W25N3EA::writeDisable(){
   char buf[] = {W25N_WRITE_DISABLE};
   this->sendData(buf, sizeof(buf));
 }
 
-int W25N::blockErase(uint32_t pageAdd){
+int W25N3EA::blockErase(uint32_t pageAdd){
   if(pageAdd > this->getMaxPage()) return 1;
   this->dieSelectOnAdd(pageAdd);
   char pageHigh = (char)((pageAdd & 0xFF00) >> 8);
@@ -107,7 +107,7 @@ int W25N::blockErase(uint32_t pageAdd){
   return 0;
 }
 
-int W25N::bulkErase(){
+int W25N3EA::bulkErase(){
   int error = 0;
   for(uint32_t i = 0; i < this->getMaxPage(); i+=64){
     if((error = this->blockErase(i)) != 0) return error;
@@ -115,7 +115,7 @@ int W25N::bulkErase(){
   return 0;
 }
 
-int W25N::loadProgData(uint16_t columnAdd, char* buf, uint32_t dataLen){
+int W25N3EA::loadProgData(uint16_t columnAdd, char* buf, uint32_t dataLen){
   if(columnAdd > (uint32_t)W25N_MAX_COLUMN) return 1;
   if(dataLen > (uint32_t)W25N_MAX_COLUMN - columnAdd) return 1;
   char columnHigh = (columnAdd & 0xFF00) >> 8;
@@ -132,12 +132,12 @@ int W25N::loadProgData(uint16_t columnAdd, char* buf, uint32_t dataLen){
   return 0;
 }
 
-int W25N::loadProgData(uint16_t columnAdd, char* buf, uint32_t dataLen, uint32_t pageAdd){
+int W25N3EA::loadProgData(uint16_t columnAdd, char* buf, uint32_t dataLen, uint32_t pageAdd){
   if(this->dieSelectOnAdd(pageAdd)) return 1;
   return this->loadProgData(columnAdd, buf, dataLen);
 }
 
-int W25N::loadRandProgData(uint16_t columnAdd, char* buf, uint32_t dataLen){
+int W25N3EA::loadRandProgData(uint16_t columnAdd, char* buf, uint32_t dataLen){
   if(columnAdd > (uint32_t)W25N_MAX_COLUMN) return 1;
   if(dataLen > (uint32_t)W25N_MAX_COLUMN - columnAdd) return 1;
   char columnHigh = (columnAdd & 0xFF00) >> 8;
@@ -154,12 +154,12 @@ int W25N::loadRandProgData(uint16_t columnAdd, char* buf, uint32_t dataLen){
   return 0;
 }
 
-int W25N::loadRandProgData(uint16_t columnAdd, char* buf, uint32_t dataLen, uint32_t pageAdd){
+int W25N3EA::loadRandProgData(uint16_t columnAdd, char* buf, uint32_t dataLen, uint32_t pageAdd){
   if(this->dieSelectOnAdd(pageAdd)) return 1;
   return this->loadRandProgData(columnAdd, buf, dataLen);
 }
 
-int W25N::ProgramExecute(uint32_t pageAdd){
+int W25N3EA::ProgramExecute(uint32_t pageAdd){
   if(pageAdd > this->getMaxPage()) return 1;
   this->dieSelectOnAdd(pageAdd);
   char pageHigh = (char)((pageAdd & 0xFF00) >> 8);
@@ -170,7 +170,7 @@ int W25N::ProgramExecute(uint32_t pageAdd){
   return 0;
 }
 
-int W25N::pageDataRead(uint32_t pageAdd){
+int W25N3EA::pageDataRead(uint32_t pageAdd){
   if(pageAdd > this->getMaxPage()) return 1;
   this->dieSelectOnAdd(pageAdd);
   char pageHigh = (char)((pageAdd & 0xFF00) >> 8);
@@ -182,7 +182,7 @@ int W25N::pageDataRead(uint32_t pageAdd){
 
 }
 
-int W25N::read(uint16_t columnAdd, char* buf, uint32_t dataLen){
+int W25N3EA::read(uint16_t columnAdd, char* buf, uint32_t dataLen){
   if(columnAdd > (uint32_t)W25N_MAX_COLUMN) return 1;
   if(dataLen > (uint32_t)W25N_MAX_COLUMN - columnAdd) return 1;
   char columnHigh = (columnAdd & 0xFF00) >> 8;
@@ -198,7 +198,7 @@ int W25N::read(uint16_t columnAdd, char* buf, uint32_t dataLen){
   return 0;
 }
 //Returns the Write In Progress bit from flash.
-int W25N::check_WIP(){
+int W25N3EA::check_WIP(){
   char status = this->getStatusReg(W25N_STAT_REG);
   if(status & 0x01){
     return 1;
@@ -206,7 +206,7 @@ int W25N::check_WIP(){
   return 0;
 }                      
 
-int W25N::block_WIP(){
+int W25N3EA::block_WIP(){
   //Max WIP time is 10ms for block erase so 15 should be a max.
   unsigned long tstamp = millis();
   while(this->check_WIP()){
@@ -216,6 +216,6 @@ int W25N::block_WIP(){
   return 0;
 }
 
-int W25N::check_status(){
+int W25N3EA::check_status(){
   return(this->getStatusReg(W25N_STAT_REG));
 }

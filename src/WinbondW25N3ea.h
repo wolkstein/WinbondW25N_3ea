@@ -8,8 +8,8 @@
 //TODO add proper error codes
 //TODO add ECC support functions
  
-#ifndef WinbondW25N_H
-#define WinbondW25N_H
+#ifndef WinbondW25N3EA_H
+#define WinbondW25N3EA_H
  
 #include "Arduino.h"
 #include <SPI.h>
@@ -53,7 +53,7 @@ enum chipModels{
 };
 
 
-class W25N {
+class W25N3EA {
   private:
     int _cs;
     enum chipModels _model;
@@ -67,7 +67,7 @@ class W25N {
 
 
   public:
-    W25N();
+    W25N3EA();
 
     /* sendData(char * buf, int len) -- Sends/recieves data to the flash chip.
      * The buffer that is passed to the function will have its dat sent to the
