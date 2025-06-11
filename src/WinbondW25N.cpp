@@ -11,7 +11,15 @@ void W25N::sendData(char * buf, uint32_t len){
   SPI.endTransaction();
 }
 
-int W25N::begin(uint32_t cs){
+int W25N::begin(uint8_t cs) {
+ return this->begin(cs, MOSI, MISO, SCK);
+}
+
+int W25N::begin(uint8_t cs, uint8_t mosi, uint8_t miso, uint8_t sck){
+  SPI.setMISO(miso);
+  SPI.setMOSI(mosi);
+  SPI.setSCK(sck);
+  // Set the SPI settings
   SPI.begin();
   _cs = cs;
   pinMode(_cs, OUTPUT);

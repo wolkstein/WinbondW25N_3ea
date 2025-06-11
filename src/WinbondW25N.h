@@ -78,7 +78,8 @@ class W25N {
     /* begin(int cs) -- initialises the flash and checks that the flash is 
      * functioning and is the right model.
      * Output -- 0 if working, 1 if error*/
-    int begin(uint32_t cs);
+    int begin(uint8_t pin_spi_cs);
+    int begin(uint8_t pin_spi_cs, uint8_t pin_spi_mosi, uint8_t pin_spi_miso, uint8_t pin_spi_sck);
 
     /* reset() -- resets the device. */
     void reset();
