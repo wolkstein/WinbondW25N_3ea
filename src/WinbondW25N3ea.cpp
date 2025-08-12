@@ -4,46 +4,61 @@ W25N3EA::W25N3EA(){};
 
 
 void W25N3EA::sendData(char * buf, uint32_t len){
-  SPI.beginTransaction(SPISettings(80000000, MSBFIRST, SPI_MODE0));
+  SPI.beginTransaction(SPISettings(SPI_SPEED, MSBFIRST, SPI_MODE0));
   digitalWrite(_cs, LOW);
   SPI.transfer(buf, len);
   digitalWrite(_cs, HIGH);
   SPI.endTransaction();
 }
 
-int W25N3EA::begin(uint8_t cs) {
- return this->begin(cs, MOSI, MISO, SCK);
-}
-
-int W25N3EA::begin(uint8_t cs, uint8_t mosi, uint8_t miso, uint8_t sck){
-  SPI.setMISO(miso);
-  SPI.setMOSI(mosi);
-  SPI.setSCK(sck);
+int W25N3EA::spiBegin(uint8_t cs, uint8_t mosi, uint8_t miso, uint8_t sck){
+  if(!SPI.setMISO(miso)) return 1;
+  if(!SPI.setMOSI(mosi)) return 1;
+  if(!SPI.setSCK(sck)) return 1;
   // Set the SPI settings
   SPI.begin();
   _cs = cs;
   pinMode(_cs, OUTPUT);
   digitalWrite(_cs, HIGH);
+  return 0;
+}
 
+int W25N3EA::begin(){
   this->reset();
 
-  char jedec[5] = {W25N_JEDEC_ID, 0x00, 0x00, 0x00, 0x00};
-  this->sendData(jedec, sizeof(jedec));
-  if(jedec[2] == WINBOND_MAN_ID){
-    if((uint16_t)(jedec[3] << 8 | jedec[4]) == W25N01GV_DEV_ID){
-      this->setStatusReg(W25N_PROT_REG, 0x00);
-      this->_model = W25N01GV;
-      return 0;
-    }
-    if((uint16_t)(jedec[3] << 8 | jedec[4]) == W25M02GV_DEV_ID){
-      this->_model = W25M02GV;
-      this->dieSelect(0);
-      this->setStatusReg(W25N_PROT_REG, 0x00);
-      this->dieSelect(1);
-      this->setStatusReg(W25N_PROT_REG, 0x00);
-      this->dieSelect(0);
-      return 0;
-    }
+  // JEDEC-ID auslesen: 0x9F senden, dann 4 Bytes lesen
+  uint8_t jedec[4] = {0};
+  SPI.beginTransaction(SPISettings(SPI_SPEED, MSBFIRST, SPI_MODE0));
+  digitalWrite(_cs, LOW);
+  delayMicroseconds(100); // Ensure CS is low for at least 1us
+  SPI.transfer(W25N_JEDEC_ID); // 0x9F senden
+  for (int i = 0; i < 4; i++) {
+    jedec[i] = SPI.transfer(0x00); // Antwortbytes lesen
+  }
+  delayMicroseconds(100); // Ensure CS is low for at least 1us
+  digitalWrite(_cs, HIGH);
+  SPI.endTransaction();
+
+
+  //Check the JEDEC ID (Hersteller-ID ist Byte 1, Device-ID ist Byte 2+3)
+  if(jedec[1] != WINBOND_MAN_ID){
+    return 1;
+  }
+
+  uint16_t device_id = (jedec[2] << 8) | jedec[3];
+  if(device_id == W25N01GV_DEV_ID){
+    this->setStatusReg(W25N_PROT_REG, 0x00);
+    this->_model = W25N01GV;
+    return 0;
+  }
+  if(device_id == W25M02GV_DEV_ID){
+    this->_model = W25M02GV;
+    this->dieSelect(0);
+    this->setStatusReg(W25N_PROT_REG, 0x00);
+    this->dieSelect(1);
+    this->setStatusReg(W25N_PROT_REG, 0x00);
+    this->dieSelect(0);
+    return 0;
   }
   return 1;
 }
@@ -123,7 +138,7 @@ int W25N3EA::loadProgData(uint16_t columnAdd, char* buf, uint32_t dataLen){
   char cmdbuf[3] = {W25N_PROG_DATA_LOAD, columnHigh, columnLow};
   this->block_WIP();
   this->writeEnable();
-  SPI.beginTransaction(SPISettings(80000000, MSBFIRST, SPI_MODE0));
+  SPI.beginTransaction(SPISettings(SPI_SPEED, MSBFIRST, SPI_MODE0));
   digitalWrite(_cs, LOW);
   SPI.transfer(cmdbuf, sizeof(cmdbuf));
   SPI.transfer(buf, dataLen);
@@ -145,7 +160,7 @@ int W25N3EA::loadRandProgData(uint16_t columnAdd, char* buf, uint32_t dataLen){
   char cmdbuf[3] = {W25N_RAND_PROG_DATA_LOAD, columnHigh, columnLow};
   this->block_WIP();
   this->writeEnable();
-  SPI.beginTransaction(SPISettings(80000000, MSBFIRST, SPI_MODE0));
+  SPI.beginTransaction(SPISettings(SPI_SPEED, MSBFIRST, SPI_MODE0));
   digitalWrite(_cs, LOW);
   SPI.transfer(cmdbuf, sizeof(cmdbuf));
   SPI.transfer(buf, dataLen);
@@ -189,7 +204,7 @@ int W25N3EA::read(uint16_t columnAdd, char* buf, uint32_t dataLen){
   char columnLow = columnAdd & 0xff;
   char cmdbuf[4] = {W25N_READ, columnHigh, columnLow, 0x00};
   this->block_WIP();
-  SPI.beginTransaction(SPISettings(80000000, MSBFIRST, SPI_MODE0));
+  SPI.beginTransaction(SPISettings(SPI_SPEED, MSBFIRST, SPI_MODE0));
   digitalWrite(_cs, LOW);
   SPI.transfer(cmdbuf, sizeof(cmdbuf));
   SPI.transfer(buf, dataLen);
@@ -204,7 +219,7 @@ int W25N3EA::check_WIP(){
     return 1;
   }
   return 0;
-}                      
+}
 
 int W25N3EA::block_WIP(){
   //Max WIP time is 10ms for block erase so 15 should be a max.

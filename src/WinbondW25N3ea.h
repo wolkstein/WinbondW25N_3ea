@@ -7,12 +7,14 @@
 //TODO add support for multi-Gb chips that require bank switching
 //TODO add proper error codes
 //TODO add ECC support functions
- 
+
 #ifndef WinbondW25N3EA_H
 #define WinbondW25N3EA_H
- 
+
 #include "Arduino.h"
 #include <SPI.h>
+
+#define SPI_SPEED 32000000
 
 #define W25M_DIE_SELECT           0xC2
 
@@ -71,15 +73,17 @@ class W25N3EA {
 
     /* sendData(char * buf, int len) -- Sends/recieves data to the flash chip.
      * The buffer that is passed to the function will have its dat sent to the
-     * flash chip, and the data recieved will be written back to that same 
+     * flash chip, and the data recieved will be written back to that same
      * buffer. */
     void sendData(char * buf, uint32_t len);
 
-    /* begin(int cs) -- initialises the flash and checks that the flash is 
+    /* begin(int cs) -- initialises the flash and checks that the flash is
      * functioning and is the right model.
      * Output -- 0 if working, 1 if error*/
-    int begin(uint8_t pin_spi_cs);
-    int begin(uint8_t pin_spi_cs, uint8_t pin_spi_mosi, uint8_t pin_spi_miso, uint8_t pin_spi_sck);
+    int begin();
+
+    // Startup SPI bevor calling begin()
+    int spiBegin(uint8_t pin_spi_cs, uint8_t pin_spi_mosi, uint8_t pin_spi_miso, uint8_t pin_spi_sck);
 
     /* reset() -- resets the device. */
     void reset();
@@ -113,7 +117,7 @@ class W25N3EA {
     /* writeDisable() -- disables all write opperations on the chip */
     void writeDisable();
 
-    /* blockErase(uint32_t pageAdd) -- Erases one block of data on the flash chip. One block is 64 Pages, and any given 
+    /* blockErase(uint32_t pageAdd) -- Erases one block of data on the flash chip. One block is 64 Pages, and any given
      * page address within the block will erase that block.
      * Rerturns 0 if successful
      * */
@@ -121,11 +125,11 @@ class W25N3EA {
 
     /* bulkErase() -- Erases the entire chip
      * THIS TAKES A VERY LONG TIME, ~30 SECONDS
-     * Returns 0 if successful 
+     * Returns 0 if successful
      * */
     int bulkErase();
 
-    /* loadRandProgData(uint16_t columnAdd, char* buf, uint32_t dataLen) -- Transfers datalen number of bytes from the 
+    /* loadRandProgData(uint16_t columnAdd, char* buf, uint32_t dataLen) -- Transfers datalen number of bytes from the
      * given buffer to the internal flash buffer, to be programed once a ProgramExecute command is sent.
      * datalLen cannot be more than the internal buffer size of 2111 bytes, or 2048 if ECC is enabled on chip.
      * When called any data in the internal buffer beforehand will be nullified.
@@ -134,11 +138,11 @@ class W25N3EA {
     int loadProgData(uint16_t columnAdd, char* buf, uint32_t dataLen);
     int loadProgData(uint16_t columnAdd, char* buf, uint32_t dataLen, uint32_t pageAdd);
 
-    /* loadRandProgData(uint16_t columnAdd, char* buf, uint32_t dataLen) -- Transfers datalen number of bytes from the 
+    /* loadRandProgData(uint16_t columnAdd, char* buf, uint32_t dataLen) -- Transfers datalen number of bytes from the
      * given buffer to the internal flash buffer, to be programed once a ProgramExecute command is sent.
      * datalLen cannot be more than the internal buffer size of 2111 bytes, or 2048 if ECC is enabled on chip.
      * Unlike the normal loadProgData the loadRandProgData function allows multiple transfers to the internal buffer
-     * without the nulling of the currently kept data. 
+     * without the nulling of the currently kept data.
      * WILL ERASE THE DATA IN BUF OF LENGTH DATALEN BYTES
      */
     int loadRandProgData(uint16_t columnAdd, char* buf, uint32_t dataLen);
@@ -151,7 +155,7 @@ class W25N3EA {
     int ProgramExecute(uint32_t pageAdd);
 
     //pageDataRead(uint32_t add) -- Commands the flash to read from the given page address into
-    //its internal buffer, to be read using the read() function. 
+    //its internal buffer, to be read using the read() function.
     //This command will put the flash in a busy state for a time, so busy checking is required after use.
     int pageDataRead(uint32_t pageAdd);
 
@@ -171,7 +175,7 @@ class W25N3EA {
 
 
     int check_status();
-    
+
 };
 
 #endif
